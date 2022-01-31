@@ -7,6 +7,22 @@ namespace Kse.Algorithms.Samples
     {
         public void Print(string[,] maze)
         {
+            for (var index = 0; index < path.Count; index++)
+        {
+            var point = path[index];
+            if (index == 0)
+            {
+                maze[point.Column, point.Row] = "A";
+            }
+
+            if (index == path.Count - 1)
+            {
+                maze[point.Column, point.Row] = "B";
+            }
+
+            maze[point.Column, point.Row] = "/";
+        }
+            
             PrintTopLine();
             for (var row = 0; row < maze.GetLength(1); row++)
             {
