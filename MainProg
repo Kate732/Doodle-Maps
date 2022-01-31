@@ -1,0 +1,23 @@
+using Kse.Algorithms.Samples;
+using System.Collections.Generic;
+using System;
+
+public class Maze_first_try
+{
+    public static void Main()
+    {
+        var generator = new MapGenerator(new MapGeneratorOptions()
+        {
+            Height = 35,
+            Width = 90,
+        });
+        string[,] map = generator.Generate();
+        new MapPrinter().Print(map, new List<Point>() {new Point()});
+
+        List<Point> GetShortestPath(string[,] map, Point start, Point goal)
+        {
+            List<Point> theShortestWay = new List<Point> { };
+            return theShortestWay;
+        }
+    }
+}
