@@ -1,23 +1,62 @@
-using Kse.Algorithms.Samples;
-using System.Collections.Generic;
-using System;
-
-public class Maze_first_try
+namespace Kse.Algorithms.Samples
 {
-    public static void Main()
-    {
-        var generator = new MapGenerator(new MapGeneratorOptions()
-        {
-            Height = 35,
-            Width = 90,
-        });
-        string[,] map = generator.Generate();
-        new MapPrinter().Print(map, new List<Point>() {new Point()});
+    using System.Collections.Generic;
 
-        List<Point> GetShortestPath(string[,] map, Point start, Point goal)
+    public static class MazeFirstTry
+    {
+        public static void Main()
         {
-            List<Point> theShortestWay = new List<Point> { };
+            var generator = new MapGenerator(new MapGeneratorOptions() {Height = 35, Width = 90});
+            var map = generator.Generate();
+            Point start = new Point(0, 0);
+            Point goal = new Point(2, 2);
+            List<Point> shortWay = GetShortestPath(map, start, goal);
+            new MapPrinter().Print(map, shortWay);
+        }
+
+        private static List<Point> GetShortestPath(string[,] map, Point start, Point goal)
+        {
+            var theShortestWay = new List<Point> { };
+            var unvisited = new List<string>();
+            var current = start;
+            foreach (var point in map)
+            {
+                if (point == MapGenerator.Space)
+                {
+                    unvisited.Add(point);
+                }
+            }
+
+            var neighbours = GetNeighbours(current.Row, current.Column, map);
             return theShortestWay;
+        }
+
+        private static void Visit(Point vPoint, string[,] map, List<Point> visited)
+        {
+            map[vPoint.Row, vPoint.Column] = "1";
+            visited.Add(vPoint);
+        }
+
+        private static List<Point> GetNeighbours(int row, int column, string[,] maze)
+        {
+            var result = new List<Point>();
+            TryAddWithOffset(1, 0, row, column, maze, result);
+            TryAddWithOffset(-1, 0, row, column, maze, result);
+            TryAddWithOffset(0, 1, row, column, maze, result);
+            TryAddWithOffset(0, -1, row, column, maze, result);
+            return result;
+        }
+
+        private static void TryAddWithOffset(int offsetRow, int offsetColumn, int row, int column, string[,] maze,
+            List<Point> result)
+        {
+            var newX = row + offsetRow;
+            var newY = column + offsetColumn;
+            if (newX >= 0 && newY >= 0 && newX < maze.GetLength(0) && newY < maze.GetLength(1) &&
+                maze[newX, newY] != MapGenerator.Wall)
+            {
+                result.Add(new Point(newY, newX));
+            }
         }
     }
 }
