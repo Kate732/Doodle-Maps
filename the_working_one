@@ -1,0 +1,176 @@
+using System;
+using System.Threading;
+
+namespace Kse.Algorithms.Samples
+{
+    using System.Collections.Generic;
+
+    public static class MazeFirstTry
+    {
+        public static void Main()
+        {
+            var generator = new MapGenerator(new MapGeneratorOptions {Height = 35, Width = 90, Seed = 0});
+            var map = generator.Generate();
+            new MapPrinter().Print(map);
+            Thread.Sleep(100);
+            Point start = new Point(0, 0);
+            Point goal = new Point(6, 14);
+            List<Point> shortWay = GetShortestPath(map, start, goal);
+            Thread.Sleep(100);
+            new MapPrinter().Print(map, shortWay);
+        }
+
+        private static List<Point> GetShortestPath(string[,] map, Point start, Point goal)
+        {
+            var unvisited = new HashSet<Point>();
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int j = 0; j < map.GetLength(1); j++)
+                {
+                    Point unv = new Point(i, j);
+                    unvisited.Add(unv);
+                }
+            }
+
+            var current = start;
+            int[,] distance = new int[map.GetLength(0), map.GetLength(1)];
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int j = 0; j < map.GetLength(1); j++)
+                {
+                    distance[i, j] = Int32.MaxValue;
+                }
+            }
+
+            distance[start.Column, start.Row] = 0;
+
+            while (true)
+            {
+                var neighbours = GetNeighbours(current.Row, current.Column, map);
+                CountDist(neighbours, unvisited, distance, current);
+
+                // 
+
+                unvisited.Remove(current);
+                if (!unvisited.Contains(goal))
+                {
+                    break;
+                }
+
+                current = NewCurrent(unvisited, distance);
+            }
+
+            PrintDist(distance);
+            List<Point> theShortestWay = FindTheWayBack(map, distance, goal);
+
+            return theShortestWay;
+        }
+
+        private static List<Point> FindTheWayBack(string[,] map, int[,] distance, Point goal)
+        {
+            var current = goal;
+            var theShortestWay = new List<Point> {goal};
+            for (int i = 0; i <= distance[goal.Column, goal.Row]; i++)
+            {
+                var neighbors = GetNeighbours(current.Row, current.Column, map);
+                foreach (var neighbor in neighbors)
+                {
+                    if (distance[neighbor.Column, neighbor.Row] == distance[current.Column, current.Row] - 1)
+                    {
+                        theShortestWay.Add(neighbor);
+                        current = neighbor;
+                        break;
+                    }
+                }
+            }
+
+            return theShortestWay;
+        }
+
+        private static void PrintDist(int[,] distance)
+        {
+            for (int row = 0; row < distance.GetLength(1); row++)
+            {
+                for (int col = 0; col < distance.GetLength(0); col++)
+                {
+                    if (distance[col, row] == Int32.MaxValue)
+                    {
+                        Console.Write(" *");
+                    }
+                    else
+                    {
+                        Console.Write(distance[col, row].ToString("D2"));
+                    }
+                    Console.Write(" ");
+                }
+
+                Console.WriteLine();
+            }
+        }
+
+        private static void CountDist(List<Point> neighbours, HashSet<Point> unvisited, int[,] distance, Point current)
+        {
+            foreach (var neighbour in neighbours)
+            {
+                if (unvisited.Contains(neighbour))
+                {
+                    int distToNeighbor = distance[current.Column, current.Row] + 1;
+                    if (distToNeighbor < distance[neighbour.Column, neighbour.Row])
+                    {
+                        distance[neighbour.Column, neighbour.Row] = distToNeighbor;
+                    }
+                }
+            }
+        }
+
+        private static Point NewCurrent(HashSet<Point> unvisited, int[,] distance)
+        {
+            Point current = new Point();
+            int smallestDistance = Int32.MaxValue;
+
+            foreach (var point in unvisited)
+            {
+                if (distance[point.Column, point.Row] < smallestDistance)
+                {
+                    smallestDistance = distance[point.Column, point.Row];
+                    current = point;
+                }
+            }
+
+            if (smallestDistance == Int32.MaxValue)
+            {
+                throw new Exception("Path doesn't exist");
+            }
+
+            return current;
+        }
+
+        private static void Visit(Point vPoint, string[,] map, List<Point> visited)
+        {
+            map[vPoint.Row, vPoint.Column] = "1";
+            visited.Add(vPoint);
+        }
+
+        private static List<Point> GetNeighbours(int row, int column, string[,] maze)
+        {
+            var result = new List<Point>();
+            TryAddWithOffset(1, 0, row, column, maze, result);
+            TryAddWithOffset(-1, 0, row, column, maze, result);
+            TryAddWithOffset(0, 1, row, column, maze, result);
+            TryAddWithOffset(0, -1, row, column, maze, result);
+            return result;
+        }
+
+        private static void TryAddWithOffset(int offsetRow, int offsetColumn, int row, int column, string[,] maze,
+            List<Point> result)
+        {
+            var newRow = row + offsetRow;
+            var newColumn = column + offsetColumn;
+            if (newRow >= 0 && newColumn >= 0 && newRow < maze.GetLength(1) && newColumn < maze.GetLength(0) &&
+                maze[newColumn, newRow] != MapGenerator.Wall)
+            {
+                result.Add(new Point(newColumn, newRow));
+            }
+        }
+    }
+}
