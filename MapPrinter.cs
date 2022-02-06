@@ -5,24 +5,30 @@ namespace Kse.Algorithms.Samples
 
     public class MapPrinter
     {
-        public void Print(string[,] maze)
+        public void Print(string[,] maze, List<Point> path)
         {
             for (var index = 0; index < path.Count; index++)
         {
             var point = path[index];
-            if (index == 0)
+            if (index == path.Count - 1)
             {
                 maze[point.Column, point.Row] = "A";
             }
 
-            if (index == path.Count - 1)
+            else if (index == 0)
             {
                 maze[point.Column, point.Row] = "B";
             }
-
-            maze[point.Column, point.Row] = "/";
+            else
+            {
+                maze[point.Column, point.Row] = "/";
+            }
+        }
+        Print(maze);
         }
             
+        public void Print(string[,] maze)
+        {
             PrintTopLine();
             for (var row = 0; row < maze.GetLength(1); row++)
             {
