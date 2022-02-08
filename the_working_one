@@ -49,8 +49,6 @@ namespace Kse.Algorithms.Samples
                 var neighbours = GetNeighbours(current.Row, current.Column, map);
                 CountDist(neighbours, unvisited, distance, current);
 
-                // 
-
                 unvisited.Remove(current);
                 if (!unvisited.Contains(goal))
                 {
@@ -65,7 +63,63 @@ namespace Kse.Algorithms.Samples
 
             return theShortestWay;
         }
+        private static List<Point> GetNeighbours(int row, int column, string[,] maze)
+        {
+            var result = new List<Point>();
+            TryAddWithOffset(1, 0, row, column, maze, result);
+            TryAddWithOffset(-1, 0, row, column, maze, result);
+            TryAddWithOffset(0, 1, row, column, maze, result);
+            TryAddWithOffset(0, -1, row, column, maze, result);
+            return result;
+        }
 
+        private static void TryAddWithOffset(int offsetRow, int offsetColumn, int row, int column, string[,] maze,
+            List<Point> result)
+        {
+            var newRow = row + offsetRow;
+            var newColumn = column + offsetColumn;
+            if (newRow >= 0 && newColumn >= 0 && newRow < maze.GetLength(1) && newColumn < maze.GetLength(0) &&
+                maze[newColumn, newRow] != MapGenerator.Wall)
+            {
+                result.Add(new Point(newColumn, newRow));
+            }
+        }
+        private static void CountDist(List<Point> neighbours, HashSet<Point> unvisited, int[,] distance, Point current)
+        {
+            foreach (var neighbour in neighbours)
+            {
+                if (unvisited.Contains(neighbour))
+                {
+                    int distToNeighbor = distance[current.Column, current.Row] + 1;
+                    if (distToNeighbor < distance[neighbour.Column, neighbour.Row])
+                    {
+                        distance[neighbour.Column, neighbour.Row] = distToNeighbor;
+                    }
+                }
+            }
+        }
+
+        private static Point NewCurrent(HashSet<Point> unvisited, int[,] distance)
+        {
+            Point current = new Point();
+            int smallestDistance = Int32.MaxValue;
+
+            foreach (var point in unvisited)
+            {
+                if (distance[point.Column, point.Row] < smallestDistance)
+                {
+                    smallestDistance = distance[point.Column, point.Row];
+                    current = point;
+                }
+            }
+
+            if (smallestDistance == Int32.MaxValue)
+            {
+                throw new Exception("Path doesn't exist");
+            }
+
+            return current;
+        }
         private static List<Point> FindTheWayBack(string[,] map, int[,] distance, Point goal)
         {
             var current = goal;
@@ -107,70 +161,6 @@ namespace Kse.Algorithms.Samples
                 Console.WriteLine();
             }
         }
-
-        private static void CountDist(List<Point> neighbours, HashSet<Point> unvisited, int[,] distance, Point current)
-        {
-            foreach (var neighbour in neighbours)
-            {
-                if (unvisited.Contains(neighbour))
-                {
-                    int distToNeighbor = distance[current.Column, current.Row] + 1;
-                    if (distToNeighbor < distance[neighbour.Column, neighbour.Row])
-                    {
-                        distance[neighbour.Column, neighbour.Row] = distToNeighbor;
-                    }
-                }
-            }
-        }
-
-        private static Point NewCurrent(HashSet<Point> unvisited, int[,] distance)
-        {
-            Point current = new Point();
-            int smallestDistance = Int32.MaxValue;
-
-            foreach (var point in unvisited)
-            {
-                if (distance[point.Column, point.Row] < smallestDistance)
-                {
-                    smallestDistance = distance[point.Column, point.Row];
-                    current = point;
-                }
-            }
-
-            if (smallestDistance == Int32.MaxValue)
-            {
-                throw new Exception("Path doesn't exist");
-            }
-
-            return current;
-        }
-
-        private static void Visit(Point vPoint, string[,] map, List<Point> visited)
-        {
-            map[vPoint.Row, vPoint.Column] = "1";
-            visited.Add(vPoint);
-        }
-
-        private static List<Point> GetNeighbours(int row, int column, string[,] maze)
-        {
-            var result = new List<Point>();
-            TryAddWithOffset(1, 0, row, column, maze, result);
-            TryAddWithOffset(-1, 0, row, column, maze, result);
-            TryAddWithOffset(0, 1, row, column, maze, result);
-            TryAddWithOffset(0, -1, row, column, maze, result);
-            return result;
-        }
-
-        private static void TryAddWithOffset(int offsetRow, int offsetColumn, int row, int column, string[,] maze,
-            List<Point> result)
-        {
-            var newRow = row + offsetRow;
-            var newColumn = column + offsetColumn;
-            if (newRow >= 0 && newColumn >= 0 && newRow < maze.GetLength(1) && newColumn < maze.GetLength(0) &&
-                maze[newColumn, newRow] != MapGenerator.Wall)
-            {
-                result.Add(new Point(newColumn, newRow));
-            }
-        }
+        
     }
 }
