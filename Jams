@@ -1,0 +1,184 @@
+using System;
+using System.Threading;
+
+namespace Kse.Algorithms.Samples
+{
+    using System.Collections.Generic;
+
+    public static class MazeFirstTry
+    {
+        public static void Main()
+        {
+            var generator = new MapGenerator(new MapGeneratorOptions
+            {
+                Height = 35, 
+                Width = 90, 
+                Seed = 0, 
+                AddTraffic = true,
+                TrafficSeed = 1234
+            });
+            var map = generator.Generate();
+            new MapPrinter().Print(map);
+            Thread.Sleep(100);
+            Point start = new Point(0, 0);
+            Point goal = new Point(6, 34);
+            // Point goal = new Point(0, 0);
+            // Point goal = new Point(6, 14);
+            (List<Point> shortWay, double time) res = GetShortestPath(map, start, goal);
+            List<Point> shortWay = res.shortWay;
+            Thread.Sleep(100);
+            new MapPrinter().Print(map, shortWay);
+            Console.WriteLine($"Total time: {res.time}");
+            // v=60 - (n-1)*6
+        }
+
+        private static (List<Point> shortWay, double time) GetShortestPath(string[,] map, Point start, Point goal)
+        {
+            var unvisited = new HashSet<Point>();
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int j = 0; j < map.GetLength(1); j++)
+                {
+                    Point unv = new Point(i, j);
+                    unvisited.Add(unv);
+                }
+            }
+
+            var current = start;
+            double[,] time = new double[map.GetLength(0), map.GetLength(1)];
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int j = 0; j < map.GetLength(1); j++)
+                {
+                    time[i, j] = Double.MaxValue;
+                }
+            }
+
+            time[start.Column, start.Row] = 0.0;
+
+            while (true)
+            {
+                var neighbours = GetNeighbours(current.Row, current.Column, map);
+                CountTime(neighbours, unvisited, time, map, current);
+
+                unvisited.Remove(current);
+                if (!unvisited.Contains(goal))
+                {
+                    break;
+                }
+
+                current = NewCurrent(unvisited, time);
+            }
+
+            PrintTime(time);
+            var theShortestWay = FindTheWayBack(map, time, goal);
+
+            return (theShortestWay, time[goal.Column, goal.Row]);
+        }
+
+
+        private static List<Point> GetNeighbours(int row, int column, string[,] maze)
+        {
+            var result = new List<Point>();
+            TryAddWithOffset(1, 0, row, column, maze, result);
+            TryAddWithOffset(-1, 0, row, column, maze, result);
+            TryAddWithOffset(0, 1, row, column, maze, result);
+            TryAddWithOffset(0, -1, row, column, maze, result);
+            return result;
+        }
+
+        private static void TryAddWithOffset(int offsetRow, int offsetColumn, int row, int column, string[,] maze,
+            List<Point> result)
+        {
+            var newRow = row + offsetRow;
+            var newColumn = column + offsetColumn;
+            if (newRow >= 0 && newColumn >= 0 && newRow < maze.GetLength(1) && newColumn < maze.GetLength(0) &&
+                maze[newColumn, newRow] != MapGenerator.Wall)
+            {
+                result.Add(new Point(newColumn, newRow));
+            }
+        }
+
+        private static void CountTime(List<Point> neighbours, HashSet<Point> unvisited, double[,] time, string[,] map, Point current)
+        {
+            foreach (var neighbour in neighbours)
+            {
+                if (!unvisited.Contains(neighbour)) continue;
+                double timeForCurrent = GetTimeByJamTraffic(current, map);
+                var timeToNeighbor = timeForCurrent + time[current.Column, current.Row];
+                if (timeToNeighbor < time[neighbour.Column, neighbour.Row])
+                {
+                    time[neighbour.Column, neighbour.Row] = timeToNeighbor;
+                }
+            }
+        }
+
+        
+        private static Point NewCurrent(HashSet<Point> unvisited, double[,] time)
+        {
+            var current = new Point();
+            var smallestTime = Double.MaxValue;
+
+            foreach (var point in unvisited)
+            {
+                if (time[point.Column, point.Row] >= smallestTime) continue;
+                smallestTime = time[point.Column, point.Row];
+                current = point;
+            }
+
+            if (AreEqual(smallestTime, Double.MaxValue))
+            {
+                throw new Exception("Path doesn't exist");
+            }
+
+            return current;
+        }
+
+        private static List<Point> FindTheWayBack(string[,] map, double[,] time, Point goal)
+        {
+            var current = goal;
+            var theShortestWay = new List<Point> {goal};
+            while(time[current.Column, current.Row] != 0)
+            {
+                var neighbors = GetNeighbours(current.Row, current.Column, map);
+                foreach (var neighbor in neighbors)
+                {
+                    if (AreEqual(time[current.Column, current.Row] - 
+                                 GetTimeByJamTraffic(neighbor, map), time[neighbor.Column, neighbor.Row]))
+                    {
+                        theShortestWay.Add(neighbor);
+                        current = neighbor;
+                        break;
+                    }
+                }
+            }
+
+            return theShortestWay;
+        }
+
+        private static bool AreEqual(double current, double neighbor)
+        {
+            const double eps = 1E-5;
+            return Math.Abs(current - neighbor) < eps;
+        }
+
+        private static double GetTimeByJamTraffic(Point p, string[,] map)
+        {
+            return 1.0 / (66 - 6 * double.Parse(map[p.Column, p.Row]));
+        }
+
+        private static void PrintTime(double[,] time)
+        {
+            for (var row = 0; row < time.GetLength(1); row++)
+            {
+                for (var col = 0; col < time.GetLength(0); col++)
+                {
+                    Console.Write(AreEqual(time[col, row], Double.MaxValue) ? " * " : time[col, row].ToString("000."));
+                    Console.Write(" ");
+                }
+
+                Console.WriteLine();
+            }
+        }
+    }
+}
